@@ -1,0 +1,66 @@
+version: '3.8'
+networks:
+  ddms-network:
+    driver: bridge
+
+services:
+  frankenphp:
+    build:
+      context: .
+      dockerfile: frankenphp.dockerfile    
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src:/app
+      - ./Caddyfile:/etc/caddy/Caddyfile
+    environment:
+      PHP_INI_SCAN_DIR: "/usr/local/etc/php/conf.d:/usr/local/etc/php/conf.disabled"
+      CADDY_GLOBAL_OPTIONS: "local_certs"
+    networks:
+      - ddms-network
+  
+  # postgres:
+  #   build:
+  #     context: .
+  #     dockerfile: postgres.dockerfile
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - ./.postgre:/var/lib/postgresql/data
+  #   networks:
+  #     - php84-network
+  #   environment:
+  #     POSTGRES_DB: laravel
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: root
+      
+  nodejs:
+    image: node:latest
+    ports:
+      - "8000:8000"
+      - "5173:5173"
+    volumes:
+      - ./src:/app
+    working_dir: /app
+    tty: true
+    networks:
+      - ddms-network
+
+  composer:
+    image: composer:2
+    volumes:
+      - ./src:/app
+    working_dir: /app
+    networks:
+      - ddms-network
+    # command: composer install
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.redis:/data
+    networks:
+      - ddms-network    
